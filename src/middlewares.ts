@@ -42,19 +42,19 @@ const authenticate = async (
 ) => {
   console.log('authenticate');
   try {
-    const response = await fetch(`${process.env.AUTH_URL}/api/v1/token`, {
-      headers: {
-        Authorization: req.headers.authorization || '',
-      },
-    });
-    if (!response.ok) {
-      throw new CustomError('Authentication failed', 401);
+    const bearer = req.headers.authorization;
+    if (!bearer) {
+      next(new CustomError('No authorization header', 401));
+      return;
     }
-    const message = await response.json();
-    const user = jwt.verify(message.token, process.env.JWT_SECRET as string);
-    res.locals.user = message.user;
+    const token = bearer.split(' ')[1];
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET as string);
+    if (!decodedToken) {
+      next(new CustomError('Authentication failed', 401));
+    }
+    next();
   } catch (error) {
-    throw new CustomError('Authentication failed', 401);
+    next(new CustomError('Authentication failed', 401));
   }
 };
 
